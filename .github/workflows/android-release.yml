@@ -84,6 +84,31 @@ jobs:
           ls -lh dist
           sha256sum dist/SipSaviya.apk | tee dist/SipSaviya.apk.sha256
 
+      - name: Verify APK contents (assets, icons, signature)
+        run: |
+          set -e
+          APK=dist/SipSaviya.apk
+          echo "── APK size: $(du -h "$APK" | cut -f1)"
+          unzip -l "$APK" > apk_list.txt
+          echo "── web assets bundled:"
+          grep -E "assets/www/(index.html|css/app.css|js/app.js|js/ai/brain.js|data/kb-maths.js|data/manifest.json)" apk_list.txt | awk '{print "   " $4}'
+          for f in assets/www/index.html assets/www/css/app.css assets/www/js/app.js \
+                   assets/www/js/ai/nlp.js assets/www/js/ai/embed.js assets/www/js/ai/solver.js \
+                   assets/www/js/ai/brain.js assets/www/js/ai/study.js \
+                   assets/www/data/subjects.js assets/www/data/kb-maths.js assets/www/data/kb-science.js \
+                   assets/www/data/kb-lang.js assets/www/data/kb-other.js assets/www/data/quiz.js \
+                   assets/www/data/manifest.json; do
+            grep -q "$f" apk_list.txt || { echo "MISSING $f"; exit 1; }
+          done
+          ICONS=$(grep -cE "res/mipmap-.*/ic_launcher.*\.png" apk_list.txt || true)
+          echo "── launcher icons in APK: $ICONS"
+          [ "$ICONS" -ge 8 ] || { echo "launcher icons missing"; exit 1; }
+          SDK_BT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/build-tools/34.0.0"
+          if [ -x "$SDK_BT/apksigner" ]; then
+            "$SDK_BT/apksigner" verify --print-certs "$APK" | head -5
+          fi
+          echo "✔ APK verified"
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -99,7 +124,40 @@ jobs:
           set -e
           TAG=$(grep -m1 -o 'versionName "[^"]*"' android/app/build.gradle | cut -d'"' -f2)
           TAG="v${TAG}"
-          NOTES=$(printf 'සිප්සවිය / SipSaviya %s\n\nFree Sri Lankan school books, past papers, a study planner and an offline AI tutor.\nBuilt automatically from %s.\n\nInstall: download the APK below, then allow "Install unknown apps" for your browser/file manager.\n' "$TAG" "${GITHUB_SHA:0:7}")
+          SIZE=$(du -h dist/SipSaviya.apk | cut -f1)
+          NOTES=$(cat <<EOF
+          ## 📚 සිප්සවිය / SipSaviya $TAG
+
+          **ශ්‍රී ලංකාවේ සිසුන් සඳහා නොමිලේ, සම්පූර්ණයෙන්ම offline අධ්‍යාපන යෙදුමක්.**
+          A free, fully offline study app for Sri Lankan students — school books, past
+          papers, practice questions and an AI tutor that runs **on the phone itself**.
+
+          ### ✨ මොනවද තියෙන්නේ / What's inside
+          | | |
+          |---|---|
+          | 📚 පාසල් පොත් | Grades 1–13, Sinhala / Tamil / English — free official EPD textbooks |
+          | 📝 පසුගිය ප්‍රශ්න | Grade 5, O/L & A/L past papers 2015–2025 with marking schemes |
+          | 🤖 AI ගුරුවරයා | Step-by-step answers in Sinhala/English — no internet, no data leaves the phone |
+          | 🎯 පුහුණු ප්‍රශ්න | 45 MCQs + 24 flashcards with explanations, per subject |
+          | 📅 කාලසටහන | Study plan built from your exam date and daily free time |
+          | 🌙 පෙනුම | Light/dark theme, 23 subjects, grades 1–13 |
+
+          ### 📲 ස්ථාපනය කරන ආකාරය / How to install
+          1. **SipSaviya.apk** (below, $SIZE) බාගන්න — download the APK.
+          2. ෆෝන් එකේ *Settings → Apps → Special access → Install unknown apps* එකෙන්
+             බ්‍රවුසරයට/file manager එකට අවසර දෙන්න (once, for the browser or file manager).
+          3. බාගත කළ ගොනුව ඔබන්න → **Install**. Update කිරීමට අලුත් APK එක උඩින් install කරන්න.
+          4. No account, no ads, no in-app payments, no internet needed after install.
+
+          ### 🔒 නොමිලේ හා ආරක්ෂිතයි / Free & private
+          GPL-3.0 licensed. Content links point to the official free sources
+          (Educational Publications Dept, Department of Examinations, e-Thaksalawa) —
+          we never rehost copyrighted PDFs. The AI is written from scratch in plain
+          JavaScript with zero third-party dependencies and makes **no network calls**.
+
+          Built automatically from \`${GITHUB_SHA:0:7}\` · sha256 in \`SipSaviya.apk.sha256\`
+          EOF
+          )
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/SipSaviya.apk dist/SipSaviya.apk.sha256 --clobber
           else
