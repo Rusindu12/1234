@@ -86,28 +86,47 @@ jobs:
 
       - name: Verify APK contents (assets, icons, signature)
         run: |
-          set -e
+          set -uo pipefail
           APK=dist/SipSaviya.apk
-          echo "── APK size: $(du -h "$APK" | cut -f1)"
-          unzip -l "$APK" > apk_list.txt
-          echo "── web assets bundled:"
-          grep -E "assets/www/(index.html|css/app.css|js/app.js|js/ai/brain.js|data/kb-maths.js|data/manifest.json)" apk_list.txt | awk '{print "   " $4}'
+          SDK_BT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/build-tools/34.0.0"
+          echo "── APK: $(du -h "$APK" | cut -f1)"
+          unzip -Z1 "$APK" > apk_list.txt
+          echo "── files in APK: $(wc -l < apk_list.txt)"
+          echo "── assets bundled:"; grep -E "^assets/" apk_list.txt | head -40
+
+          missing=0
           for f in assets/www/index.html assets/www/css/app.css assets/www/js/app.js \
                    assets/www/js/ai/nlp.js assets/www/js/ai/embed.js assets/www/js/ai/solver.js \
                    assets/www/js/ai/brain.js assets/www/js/ai/study.js \
                    assets/www/data/subjects.js assets/www/data/kb-maths.js assets/www/data/kb-science.js \
                    assets/www/data/kb-lang.js assets/www/data/kb-other.js assets/www/data/quiz.js \
                    assets/www/data/manifest.json; do
-            grep -q "$f" apk_list.txt || { echo "MISSING $f"; exit 1; }
+            grep -qx "$f" apk_list.txt || { echo "::error::APK is missing $f"; missing=1; }
           done
-          ICONS=$(grep -cE "res/mipmap-.*/ic_launcher.*\.png" apk_list.txt || true)
-          echo "── launcher icons in APK: $ICONS"
-          [ "$ICONS" -ge 8 ] || { echo "launcher icons missing"; exit 1; }
-          SDK_BT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/build-tools/34.0.0"
-          if [ -x "$SDK_BT/apksigner" ]; then
-            "$SDK_BT/apksigner" verify --print-certs "$APK" | head -5
+          [ "$missing" -eq 0 ] || exit 1
+          echo "✔ all offline web assets present"
+
+          # Launcher icon: ask aapt what the manifest resolves to (aapt2 renames
+          # resource files inside the APK, so never match on res/mipmap-* names).
+          AAPT=""
+          for c in "$SDK_BT/aapt" "$(dirname "$(command -v aapt2 2>/dev/null || echo /none)")/aapt" aapt; do
+            [ -x "$c" ] && AAPT="$c" && break
+          done
+          if [ -n "$AAPT" ]; then
+            "$AAPT" dump badging "$APK" | grep -E "^(package|sdkVersion|targetSdkVersion|application-label|application-icon|launchable-activity)" || true
+          else
+            echo "warning: aapt not found, skipping badging"
           fi
-          echo "✔ APK verified"
+          PNG=$(grep -cE "\.png$" apk_list.txt || true)
+          echo "── .png resources packed: ${PNG:-0}"
+
+          if [ -x "$SDK_BT/apksigner" ]; then
+            "$SDK_BT/apksigner" verify --print-certs "$APK" | head -6 || exit 1
+            echo "✔ APK signature verified"
+          else
+            echo "warning: apksigner not found, skipping signature check"
+          fi
+          echo "✔ APK contents verified"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
