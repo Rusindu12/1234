@@ -1,0 +1,9 @@
+name: probe
+on:
+  push:
+    branches: ["arena/**"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "actions work"
