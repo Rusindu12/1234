@@ -1,0 +1,68 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePath = System.getenv("SIPSAVIYA_KEYSTORE") ?: "signing/sipsaviya-release.jks"
+def keystoreFile = file(keystorePath)
+def hasReleaseKey = keystoreFile.exists()
+
+android {
+    namespace 'lk.sipsaviya.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "lk.sipsaviya.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+        resourceConfigurations += ["en", "si", "ta"]
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile keystoreFile
+                storePassword System.getenv("SIPSAVIYA_STORE_PASSWORD") ?: "sipsaviya"
+                keyAlias System.getenv("SIPSAVIYA_KEY_ALIAS") ?: "sipsaviya"
+                keyPassword System.getenv("SIPSAVIYA_KEY_PASSWORD") ?: "sipsaviya"
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            // If no release keystore is present we still produce a fully
+            // installable APK by falling back to the debug signature.
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+// Copy the freshly built APK to a predictable place for CI uploads.
+tasks.register('copyApk', Copy) {
+    def outDir = layout.buildDirectory.dir("apk").get().asFile
+    from layout.buildDirectory.dir("outputs/apk")
+    into outDir
+    include "**/*.apk"
+    eachFile { f -> f.path = f.name }
+    includeEmptyDirs = false
+}

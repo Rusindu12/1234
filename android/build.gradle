@@ -1,0 +1,6 @@
+// SipSaviya — top level build file.
+// Kept deliberately dependency-free (no Kotlin, no AndroidX) so the app builds
+// fast and reliably on a free GitHub Actions runner and the APK stays tiny.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
