@@ -49,6 +49,9 @@
     else window.open(url, "_blank");
   }
 
+  // Storage is best-effort: some WebView builds refuse DOM storage on file://
+  // URLs, and the app must still work (progress simply won't persist).
+  function lsGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
   function save(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) { } }
   function loadObj(key, def) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
@@ -868,7 +871,7 @@
   /* ------------------------------------------------------------- boot */
   function boot() {
     S.profile = loadObj(PKEY, S.profile);
-    S.theme = localStorage.getItem("sipsaviya.theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    S.theme = lsGet("sipsaviya.theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     S.chat = loadObj(CKEY, []);
     S.plan = AI.Study.state().plan || null;
     S.books.grade = S.profile.grade;
@@ -903,6 +906,19 @@
     version: "1.0.0"
   };
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
+  function start() {
+    try {
+      boot();
+    } catch (e) {
+      // Never leave the student with a blank screen.
+      var host = document.getElementById("main") || document.body;
+      host.innerHTML = '<div class="view"><div class="card"><h2>⚠️ යෙදුම පූරණය නොවුණි</h2>' +
+        '<p class="muted">යෙදුම නැවත විවෘත කරන්න. දිගටම මෙය පෙනුණොත් අලුත් APK එකක් බාගන්න.</p>' +
+        '<p class="muted"><small>' + String(e && e.message || e) + '</small></p></div></div>';
+      if (window.console && console.error) console.error("[SipSaviya] boot failed", e);
+    }
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 })();

@@ -20,7 +20,11 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceError;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -35,6 +39,7 @@ public class MainActivity extends Activity {
 
     private static final String START_URL = "file:///android_asset/www/index.html";
     private WebView web;
+    private LinearLayout errorView;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -54,6 +59,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         web.setBackgroundColor(Color.parseColor("#0B1220"));
         root.addView(web);
+        root.addView(buildErrorView());
         setContentView(root);
 
         WebSettings s = web.getSettings();
@@ -86,6 +92,23 @@ public class MainActivity extends Activity {
             @SuppressWarnings("deprecation")
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleUrl(url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request,
+                                        WebResourceError error) {
+                if (request == null || request.isForMainFrame()) {
+                    showErrorView();
+                }
+            }
+
+            @Override
+            @SuppressWarnings("deprecation")
+            public void onReceivedError(WebView view, int errorCode, String description,
+                                        String failingUrl) {
+                if (failingUrl == null || failingUrl.startsWith("file://")) {
+                    showErrorView();
+                }
             }
         });
 
@@ -123,6 +146,55 @@ public class MainActivity extends Activity {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Offline app, so a load failure almost always means a problem reading the
+     * bundled assets. Never leave the student on a blank screen: show a short
+     * Sinhala message with a retry button instead.
+     */
+    private LinearLayout buildErrorView() {
+        int pad = (int) (24 * getResources().getDisplayMetrics().density);
+
+        errorView = new LinearLayout(this);
+        errorView.setOrientation(LinearLayout.VERTICAL);
+        errorView.setGravity(android.view.Gravity.CENTER);
+        errorView.setPadding(pad, pad, pad, pad);
+        errorView.setBackgroundColor(Color.parseColor("#0B1220"));
+        errorView.setVisibility(View.GONE);
+        errorView.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        TextView title = new TextView(this);
+        title.setText("⚠️  " + getString(R.string.load_failed_title));
+        title.setTextColor(Color.parseColor("#E8EEF9"));
+        title.setTextSize(20f);
+        title.setGravity(android.view.Gravity.CENTER);
+        errorView.addView(title);
+
+        TextView body = new TextView(this);
+        body.setText(getString(R.string.load_failed_body));
+        body.setTextColor(Color.parseColor("#9FB0CC"));
+        body.setTextSize(14f);
+        body.setPadding(0, pad / 2, 0, pad / 2);
+        body.setGravity(android.view.Gravity.CENTER);
+        errorView.addView(body);
+
+        Button retry = new Button(this);
+        retry.setText(getString(R.string.retry));
+        retry.setOnClickListener(v -> {
+            errorView.setVisibility(View.GONE);
+            web.loadUrl(START_URL);
+        });
+        errorView.addView(retry);
+
+        return errorView;
+    }
+
+    private void showErrorView() {
+        if (errorView != null) {
+            runOnUiThread(() -> errorView.setVisibility(View.VISIBLE));
+        }
     }
 
     private void openExternal(String url) {

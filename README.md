@@ -23,7 +23,7 @@ government textbooks, past papers, practice questions, an automatic study planne
 | 🃏 | **ෆ්ලෑෂ් කාඩ් (SRS)** | Spaced-repetition මතක තබා ගැනීමේ පද්ධතිය |
 | 📅 | **පාඩම් කාලසටහන** | විභාග දිනය දුන්නම විෂය නිර්දේශය දින අනුව බෙදා දිනපතා ලිස්ට් එකක් සාදයි |
 | 📊 | **ප්‍රගතිය** | නිරවද්‍යතාව, දින පෙළක් (streak), විෂය අනුව දුර්වල කොටස් |
-| 🪶 | **ප්‍රමාණය** | APK ~1 MB ට අඩු, වෙබ්/WebView මත පදනම් වූ, බැටරියට හිතකර |
+| 🪶 | **ප්‍රමාණය** | APK එක **~160 KB** පමණි (කිසිදු library නැහැ), බැටරියට හිතකර |
 
 ---
 
@@ -56,8 +56,17 @@ government textbooks, past papers, practice questions, an automatic study planne
 5. **ඉගෙනුම් එන්ජිම (`js/ai/study.js`)** — දුර්වල විෂයයන්ට ප්‍රමුඛතාව දෙන ප්‍රශ්න තේරීම,
    SM-2 වැනි කාඩ් කාලසටහන, ස්වයංක්‍රීය පාඩම් සැලසුම.
 
-**ස්වයං පරීක්ෂණය:** `node tools/verify_content.js --dump` — දැනුම් පත්, ප්‍රශ්න හා AI පිළිතුරු 16ක්
-පරීක්ෂා කරයි. කිසිවක් වැරදි නම් CI මගින් APK නිකුත් නොකෙරේ.
+**ස්වයං පරීක්ෂණ (self-tests) — සියල්ල නොමිලේ, offline:**
+
+```bash
+node tools/verify_content.js          # දැනුම් පත් / ප්‍රශ්න / AI පිළිතුරු 16 (16/16)
+node tools/verify_content.js --dump   # උදාහරණ පිළිතුරු බලන්න
+npm install && node tools/ui_test.js  # jsdom එකෙන් මුළු UI එකම click කර පරීක්ෂා කිරීම (23/23)
+python3 tools/build_web.py            # CI build පියවර: පරීක්ෂා කර manifest.json ලියයි
+python3 tools/make_icons.py           # නැවත launcher icons අඳියි (කිසිදු dependency නැහැ)
+```
+
+කිසිවක් වැරදි නම් CI මගින් APK නිකුත් නොකෙරේ.
 
 ---
 
@@ -82,8 +91,23 @@ android/                      Android shell (Java, no Kotlin/AndroidX → tiny +
     index.html · css/ · js/app.js
     js/ai/{nlp,embed,solver,study,brain}.js
     data/{subjects,kb-*,quiz}.js
-tools/                        content validator + CI build step
-.github/workflows/            APK build + release automation
+tools/                        content validator, UI smoke test, icon generator, CI build step
+  verify_content.js             content + AI regression harness (no dependencies)
+  ui_test.js                    drives the whole SPA in jsdom (needs jsdom)
+  build_web.py                  CI step: validates everything, writes data/manifest.json
+  make_icons.py                 draws the launcher icons (pure Python, no dependencies)
+.github/workflows/            APK build + release automation (build → verify → release)
+```
+
+---
+
+## 🌐 බ්‍රවුසරයේ උත්සාහ කරන්න · Try it in a browser
+
+APK එක තමයි අවසන් නිෂ්පාදනය, නමුත් UI එක ඕනෑම බ්‍රවුසරයක (හෝ desktop එකේ) ක්‍රියා කරයි:
+
+```bash
+cd android/app/src/main/assets/www
+python3 -m http.server 8000        # → http://localhost:8000
 ```
 
 ---

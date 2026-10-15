@@ -3,4 +3,7 @@
     <string name="app_name">SipSaviya</string>
     <string name="share_via">Share via</string>
     <string name="no_app_for_link">No app found to open this link</string>
+    <string name="load_failed_title">අන්තර්ගතය පූරණය නොවුණි</string>
+    <string name="load_failed_body">යෙදුම නැවත උත්සාහ කරන්න. ගැටලුව දිගටම පැවතුණොත් අලුත්ම APK එක නැවත ස්ථාපනය කරන්න.</string>
+    <string name="retry">නැවත උත්සාහ කරන්න</string>
 </resources>
