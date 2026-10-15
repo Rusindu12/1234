@@ -1,0 +1,16 @@
+{
+  "name": "sipsaviya",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Free offline study app for Sri Lankan students: textbooks, past papers and an on-device AI tutor",
+  "scripts": {
+    "test": "node tools/verify_content.js && node tools/ui_test.js",
+    "test:content": "node tools/verify_content.js --dump",
+    "test:ui": "node tools/ui_test.js",
+    "build:content": "python3 tools/build_web.py"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  },
+  "license": "GPL-3.0"
+}

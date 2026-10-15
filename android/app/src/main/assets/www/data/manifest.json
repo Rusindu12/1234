@@ -1,0 +1,22 @@
+{
+  "app": "SipSaviya",
+  "contentVersion": "1.0.0",
+  "offline": true,
+  "content": {
+    "subjects": 23,
+    "cards": 104,
+    "questions": 45,
+    "flashcards": 24
+  },
+  "ai": {
+    "retrieval": "TF-IDF + truncated SVD (LSA) blended with BM25 lexical scoring",
+    "solver": "exact fraction arithmetic, linear/quadratic/simultaneous equations, geometry, statistics, unit conversion, physics & chemistry formulas",
+    "runsOnDevice": true,
+    "networkCalls": 0
+  },
+  "officialSources": {
+    "textbooks": "http://www.edupub.gov.lk/",
+    "pastPapers": "https://www.doenets.lk/pastpapers",
+    "lessons": "https://e-thaksalawa.moe.gov.lk/"
+  }
+}

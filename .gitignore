@@ -33,3 +33,7 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Node (test tooling only)
+node_modules/
+package-lock.json

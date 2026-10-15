@@ -49,8 +49,13 @@ jobs:
             yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" > /dev/null || true
           fi
 
-      - name: Build web content (icons + data checks)
-        run: python3 tools/build_web.py --verify
+      - name: Validate content + AI (build fails if broken)
+        run: python3 tools/build_web.py
+
+      - name: UI smoke test (jsdom)
+        run: |
+          npm install --no-audit --no-fund --silent
+          node tools/ui_test.js
 
       - name: Create the app signing key (first run only)
         run: |
