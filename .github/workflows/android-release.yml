@@ -179,6 +179,7 @@ jobs:
           )
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/SipSaviya.apk dist/SipSaviya.apk.sha256 --clobber
+            gh release edit "$TAG" --notes "$NOTES" --latest
           else
             gh release create "$TAG" dist/SipSaviya.apk dist/SipSaviya.apk.sha256 \
               --title "SipSaviya $TAG" --notes "$NOTES"
